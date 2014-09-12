@@ -1,5 +1,2 @@
-*.dmb
-*.rsc
-*.int
-*.lk
-*.zip
+coverage/
+node_modules/
