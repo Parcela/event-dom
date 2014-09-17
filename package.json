@@ -1,14 +1,14 @@
 {
-    "name":"event-dom",
-    "description":"DOM-events extention for parcela-event",
+    "name": "event-dom",
+    "description": "DOM-events extention for parcela-event",
     "author": [
         {
             "name": "Marco Asbreuk",
             "email": "marco@itsasbreuk.nl"
         }
     ],
-    "main":"event-dom.js",
-    "keywords":[
+    "main": "event-dom.js",
+    "keywords": [
         "itsa",
         "event",
         "events",
@@ -17,44 +17,39 @@
         "dom-events",
         "parcela"
     ],
-    "license": "MIT",
-		"repository": {
-		"type": "git",
-		"url": "https://github.com/Parcela/event-dom"
-	},
-	"bugs": {
-		"url": "https://github.com/Parcela/core/issues"
-	},
-    "dependencies": {
-        "event": "Parcela/event",
-        "utils": "Parcela/utils"
+    "license": "BSD 3-clause",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Parcela/event-dom"
     },
-	"devDependencies": {
-		"chai": "^1.9.1",
-		"istanbul": "^0.3.0",
-		"jshint": "^2.5.5",
-		"mocha": "^1.21.4",
-        "fake-dom": "Parcela/fake-dom"
-	},
-
-	"engines": {
-		"node": "*"
-	},
-
-	"scripts": {
-		"pretest": "jshint ./event-dom.js",
-		"test": "mocha tests/*.js  && istanbul cover $(which _mocha) -- tests/*.js",
-		"lint": "jshint ./event-dom.js"
-	},
-	"homepage": "http://Parcela.github.io",
-	"maintainers": [
-		{
-			"name": "Daniel Barreiro",
-			"email": "devasatyam@gmail.com"
-    	},
-		{
-			"name": "Marco Asbreuk",
-			"email": "marco@itsasbreuk.nl"
-    	}
-  	]
+    "bugs": {
+        "url": "https://github.com/Parcela/core/issues"
+    },
+    "devDependencies": {
+        "chai": "^1.9.1",
+        "istanbul": "^0.3.0",
+        "jshint": "^2.5.5",
+        "mocha": "^1.21.4",
+        "event": "Parcela/event"
+    },
+    "engines": {
+        "node": "*"
+    },
+    "scripts": {
+        "pretest": "jshint ./event-dom.js",
+        "test": "mocha tests/*.js  && istanbul cover $(which _mocha) -- tests/*.js",
+        "lint": "jshint ./event-dom.js"
+    },
+    "homepage": "http://Parcela.github.io",
+    "maintainers": [
+        {
+            "name": "Daniel Barreiro",
+            "email": "devasatyam@gmail.com"
+        },
+        {
+            "name": "Marco Asbreuk",
+            "email": "marco@itsasbreuk.nl"
+        }
+    ],
+    "version": "0.0.7"
 }
