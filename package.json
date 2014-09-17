@@ -30,7 +30,7 @@
         "istanbul": "^0.3.0",
         "jshint": "^2.5.5",
         "mocha": "^1.21.4",
-        "event": "git://github.com/Parcela/event.git#v0.0.7"
+        "event": "Parcela/event"
     },
     "engines": {
         "node": "*"
