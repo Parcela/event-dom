@@ -9,7 +9,6 @@
 
 
 
-        // dom = require('jsdom'),
 
 
 
@@ -19,6 +18,8 @@
 
     require('event/event-emitter.js');
     require('event/event-listener.js');
+    
+	if (window.navigator.userAgent === 'fake') require('jsdom');
 
     EMIT_CLICK_EVENT = function(target) {
         // dom.level2.events.MouseEvent('click');
