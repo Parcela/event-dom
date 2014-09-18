@@ -14,11 +14,11 @@
 
         Event = require('../event-dom.js')(window),
         document = window.document,
-        EMIT_CLICK_EVENT, EMIT_FOCUS_EVENT, EMIT_KEY_EVENT, buttonnode, divnode;
+        EMIT_CLICK_EVENT, EMIT_FOCUS_EVENT, EMIT_KEY_EVENT, buttonnode, divnode, divnode2;
 
     require('event/event-emitter.js');
     require('event/event-listener.js');
-    
+
 	if (window.navigator.userAgent === 'fake') require('jsdom');
 
     EMIT_CLICK_EVENT = function(target) {
@@ -86,6 +86,37 @@
         }
     };
 
+    describe('Polyfill contains', function () {
+        // Code to execute before the tests inside this describegroup.
+        before(function() {
+            divnode = document.createElement('div');
+            divnode.style = 'position: absolute; left: -1000px; top: -1000px;';
+            divnode2 = document.createElement('div');
+            buttonnode = document.createElement('button');
+            divnode2.appendChild(buttonnode);
+            divnode.appendChild(divnode2);
+            document.body.appendChild(divnode);
+        });
+
+        // Code to execute after the tests inside this describegroup.
+        after(function() {
+            document.body.removeChild(divnode);
+        });
+
+        it('contains', function () {
+            divnode.contains(divnode2).should.be.true;
+            divnode.contains(buttonnode).should.be.true;
+            divnode2.contains(divnode).should.be.false;
+            divnode2.contains(buttonnode).should.be.true;
+            buttonnode.contains(divnode).should.be.false;
+            buttonnode.contains(divnode2).should.be.false;
+            buttonnode.contains(buttonnode).should.be.true;
+            divnode2.contains(divnode2).should.be.true;
+            divnode.contains(divnode).should.be.true;
+        });
+
+    });
+
     describe('DOM Events', function () {
         // Code to execute before the tests inside this describegroup.
         before(function() {
@@ -112,6 +143,7 @@
             Event.unNotifyAll();
         });
 
+
         it('listening event', function (done) {
             Event.after('click', function() {
                 done();
@@ -127,7 +159,9 @@
                 e.preventDefault();
             }, '#buttongo');
             EMIT_CLICK_EVENT(buttonnode);
-            setTimeout(done, 0);
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
+            setTimeout(done, 50);
         });
 
         it('halt event', function (done) {
@@ -138,7 +172,9 @@
                 e.halt();
             }, '#buttongo');
             EMIT_CLICK_EVENT(buttonnode);
-            setTimeout(done, 0);
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
+            setTimeout(done, 50);
         });
 
         it('delegation on future nodes', function (done) {
@@ -167,10 +203,12 @@
             EMIT_CLICK_EVENT(buttonnode3);
             document.body.removeChild(buttonnode2);
             document.body.removeChild(buttonnode3);
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
             setTimeout(function() {
-                count.should.be.eql(3);
+                expect(count).to.eql(3);
                 done();
-            }, 0);
+            }, 50);
         });
 
         it('e.target', function (done) {
@@ -184,29 +222,33 @@
                 e.target.id.should.be.eql('buttongo');
             }, '.contclass button');
             EMIT_CLICK_EVENT(buttonnode);
-            setTimeout(done, 0);
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
+            setTimeout(done, 50);
         });
 
         it('e.target with filterfunction', function (done) {
             Event.after('click', function(e) {
                 e.target.id.should.be.eql('buttongo');
             }, function(e) {
-                return e.target.id==='buttongo'
+                return e.target.id==='buttongo';
             });
             Event.after('click', function(e) {
                 // manual filterfunction doesn't reset e.target
                 e.target.id.should.be.eql('buttongo');
             }, function(e) {
-                return e.target.id==='divcont'
+                return e.target.id==='divcont';
             });
             // a third time again on lowest level, to check if e.target is reset:
             Event.after('click', function(e) {
                 e.target.id.should.be.eql('buttongo');
             }, function(e) {
-                return e.target.id==='buttongo'
+                return e.target.id==='buttongo';
             });
             EMIT_CLICK_EVENT(buttonnode);
-            setTimeout(done, 0);
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
+            setTimeout(done, 50);
         });
 
         it('e.target with mixed selector and filterfunction', function (done) {
@@ -224,7 +266,9 @@
                 return e.target.id==='buttongo'
             });
             EMIT_CLICK_EVENT(buttonnode);
-            setTimeout(done, 0);
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
+            setTimeout(done, 50);
         });
 
         it('e.target on multiple subscribers', function (done) {
@@ -258,10 +302,12 @@
             }, 'div');
             EMIT_CLICK_EVENT(deepestbutton);
             setTimeout(function() {
-                count.should.be.eql(3);
+                expect(count).to.eql(3);
                 divnode.removeChild(divnode2);
                 done();
-            }, 0);
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
+            }, 50);
         });
 
         it('delegation on future nodes with preventDefault', function (done) {
@@ -293,10 +339,12 @@
             EMIT_CLICK_EVENT(buttonnode3);
             document.body.removeChild(buttonnode2);
             document.body.removeChild(buttonnode3);
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
             setTimeout(function() {
-                count.should.be.eql(2);
+                expect(count).to.eql(2);
                 done();
-            }, 0);
+            }, 50);
         });
 
         it('stopPropagation', function (done) {
@@ -307,12 +355,12 @@
             }, '#divcont');
 
             Event.after('click', function() {
-                count.should.be.eql(15);
+                expect(count).to.eql(15);
                 count = count + 16;
             }, '#divcont button.buttongoclass');
 
             Event.after('click', function() {
-                count.should.be.eql(31);
+                expect(count).to.eql(31);
                 count = count + 32;
             }, '#buttongo');
 
@@ -323,23 +371,23 @@
             }, '#divcont');
 
             Event.before('click', function() {
-                count.should.be.eql(0);
+                expect(count).to.eql(0);
                 count = count + 1;
             }, '#divcont button.buttongoclass');
 
             Event.before('click', function(e) {
-                count.should.be.eql(1);
+                expect(count).to.eql(1);
                 count = count + 2;
                 e.stopPropagation();
             }, '#divcont button.buttongoclass');
 
             Event.before('click', function() {
-                count.should.be.eql(3);
+                expect(count).to.eql(3);
                 count = count + 4;
             }, '#divcont button.buttongoclass');
 
             Event.before('click', function() {
-                count.should.be.eql(7);
+                expect(count).to.eql(7);
                 count = count + 8;
             }, '#buttongo');
 
@@ -347,10 +395,12 @@
 
             EMIT_CLICK_EVENT(buttonnode);
 
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
             setTimeout(function() {
-                count.should.be.eql(63);
+                expect(count).to.eql(63);
                 done();
-            }, 0);
+            }, 50);
         });
 
         it('stopPropagation situation 2', function (done) {
@@ -376,17 +426,17 @@
             }, '.contclass');
 
             Event.after('click', function(e) {
-                count.should.be.eql(31);
+                expect(count).to.eql(31);
                 count = count + 32;
             }, '.divnode2class');
 
             Event.after('click', function() {
-                count.should.be.eql(15);
+                expect(count).to.eql(15);
                 count = count + 16;
             }, '#divnode3');
 
             Event.after('click', function() {
-                count.should.be.eql(7);
+                expect(count).to.eql(7);
                 count = count + 8;
             }, 'button');
 
@@ -401,18 +451,18 @@
             }, '.contclass');
 
             Event.before('click', function(e) {
-                count.should.be.eql(3);
+                expect(count).to.eql(3);
                 count = count + 4;
                 e.stopPropagation();
             }, '.divnode2class');
 
             Event.before('click', function() {
-                count.should.be.eql(1);
+                expect(count).to.eql(1);
                 count = count + 2;
             }, '#divnode3');
 
             Event.before('click', function() {
-                count.should.be.eql(0);
+                expect(count).to.eql(0);
                 count = count + 1;
             }, 'button');
 
@@ -420,11 +470,13 @@
 
             EMIT_CLICK_EVENT(deepestbutton);
 
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
             setTimeout(function() {
-                count.should.be.eql(63);
+                expect(count).to.eql(63);
                 divnode.removeChild(divnode2);
                 done();
-            }, 0);
+            }, 50);
         });
 
         it('stopPropagation situation 3', function (done) {
@@ -450,17 +502,17 @@
             }, '#divcont');
 
             Event.after('click', function(e) {
-                count.should.be.eql(31);
+                expect(count).to.eql(31);
                 count = count + 32;
             }, '#divnode2');
 
             Event.after('click', function() {
-                count.should.be.eql(15);
+                expect(count).to.eql(15);
                 count = count + 16;
             }, '#divnode3');
 
             Event.after('click', function() {
-                count.should.be.eql(7);
+                expect(count).to.eql(7);
                 count = count + 8;
             }, 'button');
 
@@ -475,18 +527,18 @@
             }, '#divcont');
 
             Event.before('click', function(e) {
-                count.should.be.eql(3);
+                expect(count).to.eql(3);
                 count = count + 4;
                 e.stopPropagation();
             }, '#divnode2');
 
             Event.before('click', function() {
-                count.should.be.eql(1);
+                expect(count).to.eql(1);
                 count = count + 2;
             }, '#divnode3');
 
             Event.before('click', function() {
-                count.should.be.eql(0);
+                expect(count).to.eql(0);
                 count = count + 1;
             }, 'button');
 
@@ -494,11 +546,13 @@
 
             EMIT_CLICK_EVENT(deepestbutton);
 
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
             setTimeout(function() {
-                count.should.be.eql(63);
+                expect(count).to.eql(63);
                 divnode.removeChild(divnode2);
                 done();
-            }, 0);
+            }, 50);
         });
 
         it('stopImmediatePropagation', function (done) {
@@ -523,12 +577,12 @@
             }, '#divcont');
 
             Event.before('click', function() {
-                count.should.be.eql(0);
+                expect(count).to.eql(0);
                 count = count + 1;
             }, '#divcont button.buttongoclass');
 
             Event.before('click', function(e) {
-                count.should.be.eql(1);
+                expect(count).to.eql(1);
                 count = count + 2;
                 e.stopImmediatePropagation();
             }, '#divcont button.buttongoclass');
@@ -545,10 +599,12 @@
 
             EMIT_CLICK_EVENT(buttonnode);
 
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
             setTimeout(function() {
-                count.should.be.eql(3);
+                expect(count).to.eql(3);
                 done();
-            }, 0);
+            }, 50);
         });
 
         it('stopImmediatePropagation situation 2', function (done) {
@@ -578,12 +634,12 @@
             }, '.divnode2class');
 
             Event.after('click', function() {
-                count.should.be.eql(15);
+                expect(count).to.eql(15);
                 count = count + 16;
             }, '#divnode3');
 
             Event.after('click', function() {
-                count.should.be.eql(7);
+                expect(count).to.eql(7);
                 count = count + 8;
             }, 'button');
 
@@ -598,18 +654,18 @@
             }, '.contclass');
 
             Event.before('click', function(e) {
-                count.should.be.eql(3);
+                expect(count).to.eql(3);
                 count = count + 4;
                 e.stopImmediatePropagation();
             }, '.divnode2class');
 
             Event.before('click', function() {
-                count.should.be.eql(1);
+                expect(count).to.eql(1);
                 count = count + 2;
             }, '#divnode3');
 
             Event.before('click', function() {
-                count.should.be.eql(0);
+                expect(count).to.eql(0);
                 count = count + 1;
             }, 'button');
 
@@ -617,11 +673,13 @@
 
             EMIT_CLICK_EVENT(deepestbutton);
 
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
             setTimeout(function() {
-                count.should.be.eql(31);
+                expect(count).to.eql(31);
                 divnode.removeChild(divnode2);
                 done();
-            }, 0);
+            }, 50);
         });
 
         it('stopImmediatePropagation situation 3', function (done) {
@@ -651,12 +709,12 @@
             }, '#divnode2');
 
             Event.after('click', function() {
-                count.should.be.eql(15);
+                expect(count).to.eql(15);
                 count = count + 16;
             }, '#divnode3');
 
             Event.after('click', function() {
-                count.should.be.eql(7);
+                expect(count).to.eql(7);
                 count = count + 8;
             }, 'button');
 
@@ -671,18 +729,18 @@
             }, '#divcont');
 
             Event.before('click', function(e) {
-                count.should.be.eql(3);
+                expect(count).to.eql(3);
                 count = count + 4;
                 e.stopImmediatePropagation();
             }, '#divnode2');
 
             Event.before('click', function() {
-                count.should.be.eql(1);
+                expect(count).to.eql(1);
                 count = count + 2;
             }, '#divnode3');
 
             Event.before('click', function() {
-                count.should.be.eql(0);
+                expect(count).to.eql(0);
                 count = count + 1;
             }, 'button');
 
@@ -690,11 +748,13 @@
 
             EMIT_CLICK_EVENT(deepestbutton);
 
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
             setTimeout(function() {
-                count.should.be.eql(31);
+                expect(count).to.eql(31);
                 divnode.removeChild(divnode2);
                 done();
-            }, 0);
+            }, 50);
         });
 
         it('e.target', function (done) {
@@ -715,10 +775,12 @@
 
             EMIT_CLICK_EVENT(deepestbutton);
 
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
             setTimeout(function() {
                 divnode.removeChild(divnode2);
                 done();
-            }, 0);
+            }, 50);
         });
 
         it('e.currentTarget', function (done) {
@@ -743,10 +805,12 @@
 
             EMIT_CLICK_EVENT(deepestbutton);
 
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
             setTimeout(function() {
                 divnode.removeChild(divnode2);
                 done();
-            }, 0);
+            }, 50);
         });
 
         it('e.sourceTarget', function (done) {
@@ -771,10 +835,12 @@
 
             EMIT_CLICK_EVENT(deepestbutton);
 
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
             setTimeout(function() {
                 divnode.removeChild(divnode2);
                 done();
-            }, 0);
+            }, 50);
         });
 
         it('e.target on document', function (done) {
@@ -799,10 +865,12 @@
 
             EMIT_CLICK_EVENT(deepestbutton);
 
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
             setTimeout(function() {
                 divnode.removeChild(divnode2);
                 done();
-            }, 0);
+            }, 50);
         });
 
         it('e.currentTarget on document', function (done) {
@@ -827,10 +895,12 @@
 
             EMIT_CLICK_EVENT(deepestbutton);
 
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
             setTimeout(function() {
                 divnode.removeChild(divnode2);
                 done();
-            }, 0);
+            }, 50);
         });
 
         it('e.sourceTarget on document', function (done) {
@@ -855,10 +925,12 @@
 
             EMIT_CLICK_EVENT(deepestbutton);
 
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
             setTimeout(function() {
                 divnode.removeChild(divnode2);
                 done();
-            }, 0);
+            }, 50);
         });
 
     });
@@ -880,12 +952,12 @@
             var count = 0;
             Event.onceAfter('save3', function() {
                 count++;
-                count.should.be.equal(2);
+                expect(count).to.eql(2);
                 done();
             });
             Event.onceBefore('save3', function() {
                 count++;
-                count.should.be.equal(1);
+                expect(count).to.eql(1);
             });
             Event.emit('UI:save3');
         });
@@ -893,28 +965,28 @@
             var count = 0;
             Event.onceAfter('save4', function() {
                 count++;
-                count.should.be.equal(5);
+                expect(count).to.eql(5);
             });
             Event.onceAfter('save4', function() {
                 count++;
-                count.should.be.equal(4);
+                expect(count).to.eql(4);
             }, true);
             Event.onceAfter('save4', function() {
                 count++;
-                count.should.be.equal(6);
+                expect(count).to.eql(6);
                 done();
             });
             Event.onceBefore('save4', function() {
                 count++;
-                count.should.be.equal(2);
+                expect(count).to.eql(2);
             });
             Event.onceBefore('save4', function() {
                 count++;
-                count.should.be.equal(1);
+                expect(count).to.eql(1);
             }, true);
             Event.onceBefore('save4', function() {
                 count++;
-                count.should.be.equal(3);
+                expect(count).to.eql(3);
             });
             Event.emit('UI:save4');
         });
@@ -950,14 +1022,14 @@
         });
         it('check passing through payload inside before-subscriber', function (done) {
             Event.onceBefore('save7', function(e) {
-                e.a.should.be.equal(10);
+                expect(e.a).to.eql(10);
                 done();
             });
             Event.emit('UI:save7', {a: 10});
         });
         it('check passing through payload inside before-subscriber', function (done) {
             Event.onceAfter('save8', function(e) {
-                e.a.should.be.equal(10);
+                expect(e.a).to.eql(10);
                 done();
             });
             Event.emit('UI:save8', {a: 10});
@@ -965,11 +1037,11 @@
         it('check passing through payload inside before-subscriber', function (done) {
             var count = 0;
             Event.onceAfter('save9', function(e) {
-                e.a.should.be.equal(15);
+                expect(e.a).to.eql(15);
                 done();
             });
             Event.onceBefore('save9', function(e) {
-                e.a.should.be.equal(10);
+                expect(e.a).to.eql(10);
                 e.a = 15;
             });
             Event.emit('UI:save9', {a: 10});
@@ -1001,7 +1073,7 @@
             });
             Event.emit('UI:save11');
             setTimeout(function() {
-                count.should.be.equal(2);
+                expect(count).to.eql(2);
                 done();
             }, 100);
         });

@@ -48,6 +48,7 @@ var NAME = '[event-dom]: ',
      * @private
      * @since 0.0.1
     */
+    DOCUMENT_POSITION_CONTAINED_BY = 16,
     DOMEvents = {};
 
 module.exports = function (window) {
@@ -55,7 +56,7 @@ module.exports = function (window) {
         NEW_EVENTSYSTEM = DOCUMENT.addEventListener,
         OLD_EVENTSYSTEM = !NEW_EVENTSYSTEM && DOCUMENT.attachEvent,
         DOM_Events, _bubbleIE8, _domSelToFunc, _evCallback, _findCurrentTargets, _preProcessor,
-        _filter, _setupDomListener, _sortFunc;
+        _filter, _setupDomListener, SORT, _sortFunc, _sortFuncReversed;
 
     window.Parcela || (window.Parcela={});
     window.Parcela.modules || (window.Parcela.modules={});
@@ -80,6 +81,14 @@ module.exports = function (window) {
             return !!nodes[i];
         };
     }(window.Element.prototype);
+
+    // polyfill for Node.contains
+    window.Node && !window.Node.prototype.contains && function(NodePrototype) {
+        NodePrototype.contains = function(child) {
+            var comparison = this.compareDocumentPosition(child);
+            return !!((comparison===0) || (comparison & DOCUMENT_POSITION_CONTAINED_BY));
+        }
+    }(window.Node.prototype);
 
     /*
      * Polyfill for bubbling the `focus` and `blur` events in IE8.
@@ -231,7 +240,7 @@ module.exports = function (window) {
             if (beforeSubscribers.length>0) {
                 _findCurrentTargets(beforeSubscribers);
                 // sorting, based upon the sortFn
-                beforeSubscribers.sort(_sortFunc);
+                beforeSubscribers.sort(SORT);
             }
         }
 
@@ -248,7 +257,7 @@ module.exports = function (window) {
                 if (beforeSubscribersOutside.length>0) {
                     _findCurrentTargets(beforeSubscribersOutside);
                     // sorting, based upon the sortFn
-                    beforeSubscribersOutside.sort(_sortFunc);
+                    beforeSubscribersOutside.sort(SORT);
                 }
             }
         }
@@ -288,7 +297,7 @@ module.exports = function (window) {
                 if (afterSubscribers.length>0) {
                     _findCurrentTargets(afterSubscribers);
                     // sorting, based upon the sortFn
-                    afterSubscribers.sort(_sortFunc);
+                    afterSubscribers.sort(SORT);
                     async(Event._emit.bind(Event, e.target, customEvent, eventobject, [], afterSubscribers, _preProcessor, true), false);
                 }
             }
@@ -302,7 +311,7 @@ module.exports = function (window) {
                     if (afterSubscribersOutside.length>0) {
                         _findCurrentTargets(afterSubscribersOutside);
                         // sorting, based upon the sortFn
-                        afterSubscribersOutside.sort(_sortFunc);
+                        afterSubscribersOutside.sort(SORT);
                         async(Event._emit.bind(Event, e.target, customEvent+OUTSIDE, eventobjectOutside, [], afterSubscribersOutside, _preProcessor, true), false);
                     }
                 }
@@ -415,9 +424,28 @@ module.exports = function (window) {
      * @since 0.0.1
      */
     _sortFunc = function(subscriberOne, subscriberTwo) {
-        console.log(NAME, '_sortSubs');
         return (subscriberTwo.t || subscriberTwo.n).contains(subscriberOne.t || subscriberOne.n) ? -1 : 1;
     };
+
+    /*
+     *
+     * @method _sortFunc
+     * @param customEvent {String}
+     * @private
+     * @return {Function|undefined} sortable function
+     * @since 0.0.1
+     */
+    _sortFuncReversed = function(subscriberOne, subscriberTwo) {
+        return (subscriberOne.t || subscriberOne.n).contains(subscriberTwo.t || subscriberTwo.n) ? 1 : -1;
+    };
+
+    // Now a very tricky one:
+    // Some browsers do an array.sort down-top instead of top-down.
+    // In those cases we need another sortFn, for the position on an equal match should fall
+    // behind instead of before (which is the case on top-down sort)
+    [1,2].sort(function(a, b) {
+        SORT || (SORT=(a===2) ? _sortFuncReversed : _sortFunc);
+    });
 
     // Now we do some initialization in order to make DOM-events work:
 
