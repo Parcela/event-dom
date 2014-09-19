@@ -27,7 +27,6 @@
 var NAME = '[event-dom]: ',
     Event = require('event'),
     async = require('utils').async,
-    PARCELA_EMITTER = 'ParcelaEvent',
     OUTSIDE = 'outside',
     REGEXP_UI = /^UI:/,
     REGEXP_NODE_ID = /^#\S+$/,
@@ -133,37 +132,34 @@ module.exports = function (window) {
      * so it can be used to set as e.target in the final subscriber
      *
      * @method _domSelToFunc
-     * @param ev {Object} eventobject
-     * @param ev.subscriber {Object} subscriber
-     * @param ev.subscriber.o {Object} context
-     * @param ev.subscriber.cb {Function} callbackFn
-     * @param ev.subscriber.f {Function|String} filter
-     * @param ev.subscriber.n {dom-node} becomes e.currentTarget
-     * @param ev.subscriber.t {dom-node} becomes e.target
-     * @param ev.customEvent {String}
+     * @param customEvent {String} the customEvent that is transported to the eventsystem
+     * @param subscriber {Object} subscriber
+     * @param subscriber.o {Object} context
+     * @param subscriber.cb {Function} callbackFn
+     * @param subscriber.f {Function|String} filter
      * @private
      * @since 0.0.1
      */
-    _domSelToFunc = function(ev) {
+    _domSelToFunc = function(customEvent, subscriber) {
         // this stage is runned during subscription
-        var outsideEvent = REGEXP_UI_OUTSIDE.test(ev.customEvent),
-            selector = ev.subscriber.f,
+        var outsideEvent = REGEXP_UI_OUTSIDE.test(customEvent),
+            selector = subscriber.f,
             nodeid, byExactId;
 
         console.log(NAME, '_domSelToFunc type of selector = '+typeof selector);
-        // note: selector could still be a function: in case another ev.subscriber
+        // note: selector could still be a function: in case another subscriber
         // already changed it.
         if (!selector || (typeof selector === 'function')) {
-            ev.subscriber.n || (ev.subscriber.n=DOCUMENT);
+            subscriber.n || (subscriber.n=DOCUMENT);
             return;
         }
 
         nodeid = selector.match(REGEXP_EXTRACT_NODE_ID);
-        nodeid ? (ev.subscriber.nId=nodeid[1]) : (ev.subscriber.n=DOCUMENT);
+        nodeid ? (subscriber.nId=nodeid[1]) : (subscriber.n=DOCUMENT);
 
         byExactId = REGEXP_NODE_ID.test(selector);
 
-        ev.subscriber.f = function(e) {
+        subscriber.f = function(e) {
             // this stage is runned when the event happens
             console.log(NAME, '_domSelToFunc inside filter. selector: '+selector);
             var node = e.target,
@@ -180,7 +176,7 @@ module.exports = function (window) {
                 // if there is a match, then set
                 // e.target to the target that matches the selector
                 if (match && !outsideEvent) {
-                    ev.subscriber.t = node;
+                    subscriber.t = node;
                 }
                 node = node.parentNode;
             }
@@ -375,12 +371,15 @@ module.exports = function (window) {
      * Eventsystem, by calling _evCallback(). This way we keep DOM-events and our Eventsystem completely separated.
      *
      * @method _setupDomListener
-     * @param instanceEvent {Object} The Event-system
      * @param customEvent {String} the customEvent that is transported to the eventsystem
+     * @param subscriber {Object} subscriber
+     * @param subscriber.o {Object} context
+     * @param subscriber.cb {Function} callbackFn
+     * @param subscriber.f {Function|String} filter
      * @private
      * @since 0.0.1
      */
-    _setupDomListener = function(customEvent) {
+    _setupDomListener = function(customEvent, subscriber) {
         console.log(NAME, '_setupDomListener');
         var eventSplitted = customEvent.split(':'),
             eventName = eventSplitted[1],
@@ -396,6 +395,10 @@ module.exports = function (window) {
             console.warn(NAME, 'Subscription to '+eventName+' not supported, use mouseover and mouseout: this eventsystem uses these non-noisy so they act as mouseenter and mouseleave');
             return;
         }
+
+        // now transform the subscriber's filter from css-string into a filterfunction
+        _domSelToFunc(customEvent, subscriber);
+
         // already registered? then return, also return if someone registered for UI:*
         if (DOMEvents[eventName] || (eventName==='*')) {
             // cautious: one might have registered the event, but not yet the outsideevent.
@@ -456,9 +459,6 @@ module.exports = function (window) {
          ._setEventObjProperty('stopPropagation', function() {this.status.ok || (this.status.propagationStopped = this.target);})
          ._setEventObjProperty('stopImmediatePropagation', function() {this.status.ok || (this.status.immediatePropagationStopped = this.target);});
 
-    // specify the emitter by emitterName UI
-    Event.defineEmitter(window.HTMLElement.prototype, 'UI');
-
     // Event._domCallback is the only method that is added to Event.
     // We need to do this, because `event-mobile` needs access to the same method.
     // We could have done without this method and instead listen for a custom-event to handle
@@ -477,11 +477,6 @@ module.exports = function (window) {
     Event._domCallback = function(e) {
         _evCallback(e);
     };
-
-    // whenever a subscriber gets defined with a css-selector instead of a filterfunction,
-    // the event: 'ParcelaEvent:selectorsubs' get emitted. We need to catch this event and transform its
-    // selector into a filter-function:
-    Event.after(PARCELA_EMITTER+':selectorsubs', _domSelToFunc, Event);
 
     // next: bubble-polyfill for IE8:
     OLD_EVENTSYSTEM && _bubbleIE8();
