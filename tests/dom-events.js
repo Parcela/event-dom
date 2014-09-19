@@ -134,15 +134,14 @@
         // Code to execute after the tests inside this describegroup.
         after(function() {
             document.body.removeChild(divnode);
+            Event.unNotify('UI:*');
         });
 
         // Code to execute after every test.
         afterEach(function() {
             Event.detachAll();
             Event.undefAllEvents();
-            Event.unNotifyAll();
         });
-
 
         it('listening event', function (done) {
             Event.after('click', function() {
