@@ -6,20 +6,12 @@
 
     var expect = require('chai').expect,
         should = require('chai').should(),
-
-
-
-
-
-
         Event = require('../event-dom.js')(window),
         document = window.document,
         EMIT_CLICK_EVENT, EMIT_FOCUS_EVENT, EMIT_KEY_EVENT, buttonnode, divnode, divnode2;
 
     require('event/event-emitter.js');
     require('event/event-listener.js');
-
-	if (window.navigator.userAgent === 'fake') require('jsdom');
 
     EMIT_CLICK_EVENT = function(target) {
         // dom.level2.events.MouseEvent('click');
@@ -272,7 +264,6 @@
 
         it('e.target on multiple subscribers', function (done) {
             var count = 0,
-                divnode = document.getElementById('divcont'),
                 divnode2 = document.createElement('div'),
                 divnode3 = document.createElement('div'),
                 deepestbutton = document.createElement('button');
@@ -404,7 +395,6 @@
 
         it('stopPropagation situation 2', function (done) {
             var count = 0,
-                divnode = document.getElementById('divcont'),
                 divnode2 = document.createElement('div'),
                 divnode3 = document.createElement('div'),
                 deepestbutton = document.createElement('button');
@@ -480,7 +470,6 @@
 
         it('stopPropagation situation 3', function (done) {
             var count = 0,
-                divnode = document.getElementById('divcont'),
                 divnode2 = document.createElement('div'),
                 divnode3 = document.createElement('div'),
                 deepestbutton = document.createElement('button');
@@ -608,7 +597,6 @@
 
         it('stopImmediatePropagation situation 2', function (done) {
             var count = 0,
-                divnode = document.getElementById('divcont'),
                 divnode2 = document.createElement('div'),
                 divnode3 = document.createElement('div'),
                 deepestbutton = document.createElement('button');
@@ -683,7 +671,6 @@
 
         it('stopImmediatePropagation situation 3', function (done) {
             var count = 0,
-                divnode = document.getElementById('divcont'),
                 divnode2 = document.createElement('div'),
                 divnode3 = document.createElement('div'),
                 deepestbutton = document.createElement('button');
@@ -757,8 +744,7 @@
         });
 
         it('e.target', function (done) {
-            var divnode = document.getElementById('divcont'),
-                divnode2 = document.createElement('div'),
+            var divnode2 = document.createElement('div'),
                 divnode3 = document.createElement('div'),
                 deepestbutton = document.createElement('button');
             divnode2.id = 'divnode2';
@@ -783,8 +769,7 @@
         });
 
         it('e.currentTarget', function (done) {
-            var divnode = document.getElementById('divcont'),
-                divnode2 = document.createElement('div'),
+            var divnode2 = document.createElement('div'),
                 divnode3 = document.createElement('div'),
                 deepestbutton = document.createElement('button');
             divnode2.id = 'divnode2';
@@ -813,8 +798,7 @@
         });
 
         it('e.sourceTarget', function (done) {
-            var divnode = document.getElementById('divcont'),
-                divnode2 = document.createElement('div'),
+            var divnode2 = document.createElement('div'),
                 divnode3 = document.createElement('div'),
                 deepestbutton = document.createElement('button');
             divnode2.id = 'divnode2';
@@ -843,8 +827,7 @@
         });
 
         it('e.target on document', function (done) {
-            var divnode = document.getElementById('divcont'),
-                divnode2 = document.createElement('div'),
+            var divnode2 = document.createElement('div'),
                 divnode3 = document.createElement('div'),
                 deepestbutton = document.createElement('button');
             divnode2.id = 'divnode2';
@@ -873,8 +856,7 @@
         });
 
         it('e.currentTarget on document', function (done) {
-            var divnode = document.getElementById('divcont'),
-                divnode2 = document.createElement('div'),
+            var divnode2 = document.createElement('div'),
                 divnode3 = document.createElement('div'),
                 deepestbutton = document.createElement('button');
             divnode2.id = 'divnode2';
@@ -903,14 +885,13 @@
         });
 
         it('e.sourceTarget on document', function (done) {
-            var divnode = document.getElementById('divcont'),
-                divnode2 = document.createElement('div'),
+            var divnode2 = document.createElement('div'),
                 divnode3 = document.createElement('div'),
                 deepestbutton = document.createElement('button');
             divnode2.id = 'divnode2';
             divnode3.id = 'divnode3';
             divnode2.className = 'divnode2class';
-            divnode3.appendChild(deepestbutton);
+            // divnode3.appendChild(deepestbutton);
             divnode2.appendChild(divnode3);
             divnode.appendChild(divnode2);
 
