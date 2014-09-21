@@ -55,7 +55,7 @@ module.exports = function (window) {
         NEW_EVENTSYSTEM = DOCUMENT.addEventListener,
         OLD_EVENTSYSTEM = !NEW_EVENTSYSTEM && DOCUMENT.attachEvent,
         DOM_Events, _bubbleIE8, _domSelToFunc, _evCallback, _findCurrentTargets, _preProcessor,
-        _filter, _setupDomListener, SORT, _sortFunc, _sortFuncReversed, _getSubscribers;
+        _filter, _setupDomListener, SORT, _sortFunc, _sortFuncReversed, _getSubscribers, _selToFunc;
 
     window.Parcela || (window.Parcela={});
     window.Parcela.modules || (window.Parcela.modules={});
@@ -125,6 +125,12 @@ module.exports = function (window) {
         });
     };
 
+    _selToFunc = function(customEvent, subscriber) {
+        Event._sellist.some(function(selFn) {
+            return selFn(customEvent, subscriber);
+        });
+    },
+
     /*
      * Creates a filterfunction out of a css-selector. To be used for catching any dom-element, without restrictions
      * of any context (like Parcels can --> Parcel.Event uses _parcelSelToDom instead)
@@ -151,7 +157,7 @@ module.exports = function (window) {
         // already changed it.
         if (!selector || (typeof selector === 'function')) {
             subscriber.n || (subscriber.n=DOCUMENT);
-            return;
+            return true;
         }
 
         nodeid = selector.match(REGEXP_EXTRACT_NODE_ID);
@@ -183,6 +189,7 @@ module.exports = function (window) {
             console.log(NAME, '_domSelToFunc filter returns '+(!outsideEvent ? match : !match));
             return !outsideEvent ? match : !match;
         };
+        return true;
     };
 
     // at this point, we need to find out what are the current node-refs. whenever there is
@@ -407,7 +414,7 @@ module.exports = function (window) {
         }
 
         // now transform the subscriber's filter from css-string into a filterfunction
-        _domSelToFunc(customEvent, subscriber);
+        _selToFunc(customEvent, subscriber);
 
         // already registered? then return, also return if someone registered for UI:*
         if (DOMEvents[eventName] || (eventName==='*')) {
@@ -468,6 +475,9 @@ module.exports = function (window) {
     Event.notify('UI:*', _setupDomListener, Event)
          ._setEventObjProperty('stopPropagation', function() {this.status.ok || (this.status.propagationStopped = this.target);})
          ._setEventObjProperty('stopImmediatePropagation', function() {this.status.ok || (this.status.immediatePropagationStopped = this.target);});
+
+
+    Event._sellist = [_domSelToFunc];
 
     // Event._domCallback is the only method that is added to Event.
     // We need to do this, because `event-mobile` needs access to the same method.
