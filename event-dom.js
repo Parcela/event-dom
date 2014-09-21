@@ -55,7 +55,7 @@ module.exports = function (window) {
         NEW_EVENTSYSTEM = DOCUMENT.addEventListener,
         OLD_EVENTSYSTEM = !NEW_EVENTSYSTEM && DOCUMENT.attachEvent,
         DOM_Events, _bubbleIE8, _domSelToFunc, _evCallback, _findCurrentTargets, _preProcessor,
-        _filter, _setupDomListener, SORT, _sortFunc, _sortFuncReversed;
+        _filter, _setupDomListener, SORT, _sortFunc, _sortFuncReversed, _getSubscribers;
 
     window.Parcela || (window.Parcela={});
     window.Parcela.modules || (window.Parcela.modules={});
@@ -213,50 +213,16 @@ module.exports = function (window) {
      */
     _evCallback = function(e) {
         console.log(NAME, '_evCallback');
-        var beforeSubscribers = [],
-            afterSubscribers = [],
-            allSubscribers = Event._subs,
+        var allSubscribers = Event._subs,
             eventName = e.type,
             customEvent = 'UI:'+eventName,
-            eventobject, subs, wildcard_named_subs, named_wildcard_subs, wildcard_wildcard_subs,
-            beforeSubscribersOutside, afterSubscribersOutside, outsideEvent, eventobjectOutside;
+            eventobject, subs, wildcard_named_subs, named_wildcard_subs, wildcard_wildcard_subs, subsOutside,
+            subscribers, eventobjectOutside, wildcard_named_subsOutside;
 
         subs = allSubscribers[customEvent];
         wildcard_named_subs = allSubscribers['*:'+eventName];
         named_wildcard_subs = allSubscribers['UI:*'];
         wildcard_wildcard_subs = allSubscribers['*:*'];
-
-        subs && subs.b && (beforeSubscribers=beforeSubscribers.concat(subs.b));
-        wildcard_named_subs && wildcard_named_subs.b && (beforeSubscribers=beforeSubscribers.concat(wildcard_named_subs.b));
-        named_wildcard_subs && named_wildcard_subs.b && (beforeSubscribers=beforeSubscribers.concat(named_wildcard_subs.b));
-        wildcard_wildcard_subs && wildcard_wildcard_subs.b && (beforeSubscribers=beforeSubscribers.concat(wildcard_wildcard_subs.b));
-
-        if (beforeSubscribers.length>0) {
-            beforeSubscribers = _filter(beforeSubscribers, e);
-            if (beforeSubscribers.length>0) {
-                _findCurrentTargets(beforeSubscribers);
-                // sorting, based upon the sortFn
-                beforeSubscribers.sort(SORT);
-            }
-        }
-
-        outsideEvent = REGEXP_UI_OUTSIDE.test(e.type);
-        if (outsideEvent) {
-            beforeSubscribersOutside = [];
-            afterSubscribersOutside = [];
-            subs && subs.b && (beforeSubscribersOutside=beforeSubscribersOutside.concat(subs.b));
-            wildcard_named_subs && wildcard_named_subs.b && (beforeSubscribersOutside=beforeSubscribersOutside.concat(wildcard_named_subs.b));
-            named_wildcard_subs && named_wildcard_subs.b && (beforeSubscribersOutside=beforeSubscribersOutside.concat(named_wildcard_subs.b));
-            wildcard_wildcard_subs && wildcard_wildcard_subs.b && (beforeSubscribersOutside=beforeSubscribersOutside.concat(wildcard_wildcard_subs.b));
-            if (beforeSubscribersOutside.length>0) {
-                beforeSubscribersOutside = _filter(beforeSubscribersOutside, e);
-                if (beforeSubscribersOutside.length>0) {
-                    _findCurrentTargets(beforeSubscribersOutside);
-                    // sorting, based upon the sortFn
-                    beforeSubscribersOutside.sort(SORT);
-                }
-            }
-        }
 
         // Emit the dom-event though our eventsystem:
         // NOTE: emit() needs to be synchronous! otherwise we wouldn't be able
@@ -265,9 +231,14 @@ module.exports = function (window) {
         // e = eventobject from the DOM-event OR gesture-event
         // eventobject = eventobject from our Eventsystem, which get returned by calling `emit()`
 
+        subscribers = _getSubscribers(e, true, subs, wildcard_named_subs, named_wildcard_subs, wildcard_wildcard_subs);
+        eventobject = Event._emit(e.target, customEvent, e, subscribers, [], _preProcessor);
 
-        eventobject = Event._emit(e.target, customEvent, e, beforeSubscribers, [], _preProcessor);
-        outsideEvent && (eventobjectOutside=Event._emit(e.target, customEvent+OUTSIDE, e, beforeSubscribersOutside, [], _preProcessor));
+        // now check outside subscribers
+        subsOutside = allSubscribers[customEvent+OUTSIDE];
+        wildcard_named_subsOutside = allSubscribers['*:'+eventName+OUTSIDE];
+        subscribers = _getSubscribers(e, true, subsOutside, wildcard_named_subsOutside);
+        eventobjectOutside = Event._emit(e.target, customEvent+OUTSIDE, e, subscribers, [], _preProcessor);
 
         // if eventobject was preventdefaulted or halted: take appropriate action on
         // the original dom-event. Note: only the original event can caused this, not the outsideevent
@@ -284,37 +255,28 @@ module.exports = function (window) {
             // last step: invoke the aftersubscribers
             // we need to do this asynchronous: this way we pass them AFTER the DOM-event's defaultFn
             // also make sure to paas-in the payload of the manipulated eventobject
-            subs && subs.a && (afterSubscribers=afterSubscribers.concat(subs.a));
-            wildcard_named_subs && wildcard_named_subs.a && (afterSubscribers=afterSubscribers.concat(wildcard_named_subs.a));
-            named_wildcard_subs && named_wildcard_subs.a && (afterSubscribers=afterSubscribers.concat(named_wildcard_subs.a));
-            wildcard_wildcard_subs && wildcard_wildcard_subs.a && (afterSubscribers=afterSubscribers.concat(wildcard_wildcard_subs.a));
-            if (afterSubscribers.length>0) {
-                afterSubscribers = _filter(afterSubscribers, e);
-                if (afterSubscribers.length>0) {
-                    _findCurrentTargets(afterSubscribers);
-                    // sorting, based upon the sortFn
-                    afterSubscribers.sort(SORT);
-                    async(Event._emit.bind(Event, e.target, customEvent, eventobject, [], afterSubscribers, _preProcessor, true), false);
-                }
-            }
-            if (outsideEvent) {
-                subs && subs.a && (afterSubscribersOutside=afterSubscribersOutside.concat(subs.a));
-                wildcard_named_subs && wildcard_named_subs.a && (afterSubscribersOutside=afterSubscribersOutside.concat(wildcard_named_subs.a));
-                named_wildcard_subs && named_wildcard_subs.a && (afterSubscribersOutside=afterSubscribersOutside.concat(named_wildcard_subs.a));
-                wildcard_wildcard_subs && wildcard_wildcard_subs.a && (afterSubscribersOutside=afterSubscribersOutside.concat(wildcard_wildcard_subs.a));
-                if (afterSubscribersOutside.length>0) {
-                    afterSubscribersOutside = _filter(afterSubscribersOutside, e);
-                    if (afterSubscribersOutside.length>0) {
-                        _findCurrentTargets(afterSubscribersOutside);
-                        // sorting, based upon the sortFn
-                        afterSubscribersOutside.sort(SORT);
-                        async(Event._emit.bind(Event, e.target, customEvent+OUTSIDE, eventobjectOutside, [], afterSubscribersOutside, _preProcessor, true), false);
-                    }
-                }
-            }
+            subscribers = _getSubscribers(e, false, subs, wildcard_named_subs, named_wildcard_subs, wildcard_wildcard_subs);
+            (subscribers.length>0) && async(Event._emit.bind(Event, e.target, customEvent, eventobject, [], subscribers, _preProcessor, true), false);
+
+            // now check outside subscribers
+            subscribers = _getSubscribers(e, false, subsOutside, wildcard_named_subsOutside);
+            (subscribers.length>0) && async(Event._emit.bind(Event, e.target, customEvent+OUTSIDE, eventobjectOutside, [], subscribers, _preProcessor, true), false);
         }
     };
 
+    /*
+     * Filters a list of subscribers to only those subscribers that match the filter.
+     *
+     * @method _filter
+     * @param subscriber {Object} subscriber
+     * @param subscriber.o {Object} context
+     * @param subscriber.cb {Function} callbackFn
+     * @param subscriber.f {Function|String} filter
+     * @param e {Object} eventobject
+     * @private
+     * @return {Array} sublist of the subscribers: only those who match the filter.
+     * @since 0.0.1
+     */
     _filter = function(subscribers, e) {
         console.log(NAME, '_filter');
         var filtered = [];
@@ -329,6 +291,54 @@ module.exports = function (window) {
         return filtered;
     };
 
+    /*
+     * Creates an array of subscribers in the right order, conform their position in the DOM.
+     * Only subscribers that match the filter are involved.
+     *
+     * @method _getSubscribers
+     * @param e {Object} eventobject
+     * @param before {Boolean} whether it is a before- or after-subscriber
+     * @param subs {Array} array with subscribers
+     * @param wildcard_named_subs {Array} array with subscribers
+     * @param named_wildcard_subs {Array} array with subscribers
+     * @param wildcard_wildcard_subs {Array} array with subscribers
+     * @private
+     * @since 0.0.1
+     */
+    _getSubscribers = function(e, before, subs, wildcard_named_subs, named_wildcard_subs, wildcard_wildcard_subs) {
+        var subscribers = [],
+            beforeOrAfter = before ? 'b' : 'a',
+            saveConcat = function(extrasubs) {
+                extrasubs && extrasubs[beforeOrAfter] && (subscribers=subscribers.concat(extrasubs[beforeOrAfter]));
+            };
+        saveConcat(subs);
+        saveConcat(wildcard_named_subs);
+        saveConcat(named_wildcard_subs);
+        saveConcat(wildcard_wildcard_subs);
+        if (subscribers.length>0) {
+            subscribers=_filter(subscribers, e);
+            if (subscribers.length>0) {
+                _findCurrentTargets(subscribers);
+                // sorting, based upon the sortFn
+                subscribers.sort(SORT);
+            }
+        }
+        return subscribers;
+    };
+
+    /*
+     * Sets e.target, e.currentTarget and e.sourceTarget for the single subscriber.
+     * Needs to be done for evenry single subscriber, because with a single event, these values change for each subscriber
+     *
+     * @method _preProcessor
+     * @param subscriber {Object} subscriber
+     * @param subscriber.o {Object} context
+     * @param subscriber.cb {Function} callbackFn
+     * @param subscriber.f {Function|String} filter
+     * @param e {Object} eventobject
+     * @private
+     * @since 0.0.1
+     */
     _preProcessor = function(subscriber, e) {
         console.log(NAME, '_preProcessor');
         // inside the aftersubscribers, we may need exit right away.

@@ -142,6 +142,33 @@
             EMIT_CLICK_EVENT(buttonnode);
         });
 
+        it('listening event should not happen', function (done) {
+            Event.after('click', function() {
+                done(new Error('Event should not occur'));
+            }, '#buttongo');
+            EMIT_CLICK_EVENT(divnode);
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
+            setTimeout(done, 50);
+        });
+
+        it('listening outside-event', function (done) {
+            Event.after('clickoutside', function() {
+                done();
+            }, '#buttongo');
+            EMIT_CLICK_EVENT(divnode);
+        });
+
+        it('listening outside-event not happen', function (done) {
+            Event.after('clickoutside', function() {
+                done(new Error('Event should not occur'));
+            }, '#buttongo');
+            EMIT_CLICK_EVENT(buttonnode);
+            // CAUTIOUS: do not set timeout to 0 --> IE9 puts the after-dom-events
+            // a bit later in the js-stack: timeOut of 0 would happen before the after-evens
+            setTimeout(done, 50);
+        });
+
         it('preventing event', function (done) {
             Event.after('click', function() {
                 done(new Error('event should not happen'));
